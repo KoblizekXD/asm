@@ -27,6 +27,9 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 package org.objectweb.asm;
 
+import java.nio.ByteOrder;
+import java.util.Objects;
+
 /**
  * A dynamically extensible vector of bytes. This class is roughly equivalent to a DataOutputStream
  * on top of a ByteArrayOutputStream, but is more efficient.
@@ -34,6 +37,16 @@ package org.objectweb.asm;
  * @author Eric Bruneton
  */
 public class ByteVector {
+
+  static ByteOrder globalByteOrder = ByteOrder.BIG_ENDIAN;
+
+  /**
+   * @param globalByteOrder the order(endianness) in which bytes are written in all {@link ByteVector} instances
+   */
+  public static void setGlobalByteOrder(ByteOrder globalByteOrder) {
+    Objects.requireNonNull(globalByteOrder);
+    ByteVector.globalByteOrder = globalByteOrder;
+  }
 
   /** The content of this vector. Only the first {@link #length} bytes contain real data. */
   byte[] data;
@@ -72,6 +85,15 @@ public class ByteVector {
    */
   public int size() {
     return length;
+  }
+
+  /**
+   * Returns the order(endianness) in which bytes are written in this byte vector.
+   *  
+   * @return the order in which bytes are written in this byte vector.
+   */
+  public ByteOrder order() {
+    return globalByteOrder;
   }
 
   /**
@@ -121,10 +143,7 @@ public class ByteVector {
       enlarge(2);
     }
     byte[] currentData = data;
-    currentData[currentLength++] = (byte) (shortValue >>> 8);
-    currentData[currentLength++] = (byte) shortValue;
-    length = currentLength;
-    return this;
+    return writeShort(shortValue, currentLength, currentData);
   }
 
   /**
@@ -142,8 +161,17 @@ public class ByteVector {
     }
     byte[] currentData = data;
     currentData[currentLength++] = (byte) byteValue;
-    currentData[currentLength++] = (byte) (shortValue >>> 8);
-    currentData[currentLength++] = (byte) shortValue;
+    return writeShort(shortValue, currentLength, currentData);
+  }
+
+  private ByteVector writeShort(int shortValue, int currentLength, byte[] currentData) {
+    if (globalByteOrder == ByteOrder.BIG_ENDIAN) {
+      currentData[currentLength++] = (byte) (shortValue >>> 8);
+      currentData[currentLength++] = (byte) shortValue;
+    } else {
+      currentData[currentLength++] = (byte) shortValue;
+      currentData[currentLength++] = (byte) (shortValue >>> 8);
+    }
     length = currentLength;
     return this;
   }
@@ -165,10 +193,7 @@ public class ByteVector {
     byte[] currentData = data;
     currentData[currentLength++] = (byte) byteValue1;
     currentData[currentLength++] = (byte) byteValue2;
-    currentData[currentLength++] = (byte) (shortValue >>> 8);
-    currentData[currentLength++] = (byte) shortValue;
-    length = currentLength;
-    return this;
+    return writeShort(shortValue, currentLength, currentData);
   }
 
   /**
@@ -183,10 +208,17 @@ public class ByteVector {
       enlarge(4);
     }
     byte[] currentData = data;
-    currentData[currentLength++] = (byte) (intValue >>> 24);
-    currentData[currentLength++] = (byte) (intValue >>> 16);
-    currentData[currentLength++] = (byte) (intValue >>> 8);
-    currentData[currentLength++] = (byte) intValue;
+    if (globalByteOrder == ByteOrder.BIG_ENDIAN) {
+      currentData[currentLength++] = (byte) (intValue >>> 24);
+      currentData[currentLength++] = (byte) (intValue >>> 16);
+      currentData[currentLength++] = (byte) (intValue >>> 8);
+      currentData[currentLength++] = (byte) intValue;
+    } else {
+      currentData[currentLength++] = (byte) intValue;
+      currentData[currentLength++] = (byte) (intValue >>> 8);
+      currentData[currentLength++] = (byte) (intValue >>> 16);
+      currentData[currentLength++] = (byte) (intValue >>> 24);
+    }
     length = currentLength;
     return this;
   }
@@ -207,10 +239,10 @@ public class ByteVector {
     }
     byte[] currentData = data;
     currentData[currentLength++] = (byte) byteValue;
-    currentData[currentLength++] = (byte) (shortValue1 >>> 8);
-    currentData[currentLength++] = (byte) shortValue1;
-    currentData[currentLength++] = (byte) (shortValue2 >>> 8);
-    currentData[currentLength++] = (byte) shortValue2;
+    writeShort(shortValue1, currentLength, currentData);
+    currentLength += 2;
+    writeShort(shortValue2, currentLength, currentData);
+    currentLength += 2;
     length = currentLength;
     return this;
   }
@@ -227,16 +259,25 @@ public class ByteVector {
       enlarge(8);
     }
     byte[] currentData = data;
-    int intValue = (int) (longValue >>> 32);
-    currentData[currentLength++] = (byte) (intValue >>> 24);
-    currentData[currentLength++] = (byte) (intValue >>> 16);
-    currentData[currentLength++] = (byte) (intValue >>> 8);
-    currentData[currentLength++] = (byte) intValue;
-    intValue = (int) longValue;
-    currentData[currentLength++] = (byte) (intValue >>> 24);
-    currentData[currentLength++] = (byte) (intValue >>> 16);
-    currentData[currentLength++] = (byte) (intValue >>> 8);
-    currentData[currentLength++] = (byte) intValue;
+    if (globalByteOrder == ByteOrder.BIG_ENDIAN) {
+      currentData[currentLength++] = (byte) (longValue >>> 56);
+      currentData[currentLength++] = (byte) (longValue >>> 48);
+      currentData[currentLength++] = (byte) (longValue >>> 40);
+      currentData[currentLength++] = (byte) (longValue >>> 32);
+      currentData[currentLength++] = (byte) (longValue >>> 24);
+      currentData[currentLength++] = (byte) (longValue >>> 16);
+      currentData[currentLength++] = (byte) (longValue >>> 8);
+      currentData[currentLength++] = (byte) longValue;
+    } else {
+      currentData[currentLength++] = (byte) longValue;
+      currentData[currentLength++] = (byte) (longValue >>> 8);
+      currentData[currentLength++] = (byte) (longValue >>> 16);
+      currentData[currentLength++] = (byte) (longValue >>> 24);
+      currentData[currentLength++] = (byte) (longValue >>> 32);
+      currentData[currentLength++] = (byte) (longValue >>> 40);
+      currentData[currentLength++] = (byte) (longValue >>> 48);
+      currentData[currentLength++] = (byte) (longValue >>> 56);
+    }
     length = currentLength;
     return this;
   }
