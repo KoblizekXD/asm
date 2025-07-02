@@ -41,10 +41,14 @@ public class ByteVector {
   static ByteOrder globalByteOrder = ByteOrder.BIG_ENDIAN;
 
   /**
+   * Sets the order(endianness) in which bytes are written in all {@link ByteVector} instances.
+   * 
    * @param globalByteOrder the order(endianness) in which bytes are written in all {@link ByteVector} instances
    */
-  public static void setGlobalByteOrder(ByteOrder globalByteOrder) {
-    Objects.requireNonNull(globalByteOrder);
+  public static void setGlobalByteOrder(final ByteOrder globalByteOrder) {
+    if (globalByteOrder == null) {
+      throw new NullPointerException("globalByteOrder must not be null");
+    }
     ByteVector.globalByteOrder = globalByteOrder;
   }
 
@@ -164,7 +168,7 @@ public class ByteVector {
     return writeShort(shortValue, currentLength, currentData);
   }
 
-  private ByteVector writeShort(int shortValue, int currentLength, byte[] currentData) {
+  private ByteVector writeShort(final int shortValue, int currentLength, final byte[] currentData) {
     if (globalByteOrder == ByteOrder.BIG_ENDIAN) {
       currentData[currentLength++] = (byte) (shortValue >>> 8);
       currentData[currentLength++] = (byte) shortValue;
