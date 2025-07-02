@@ -27,6 +27,8 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 package org.objectweb.asm;
 
+import java.nio.ByteOrder;
+
 /**
  * A {@link ClassVisitor} that generates a corresponding ClassFile structure, as defined in the Java
  * Virtual Machine Specification (JVMS). It can be used alone, to generate a Java class "from
@@ -737,6 +739,24 @@ public class ClassWriter extends ClassVisitor {
       return result.data;
     }
   }
+
+  /**
+   * Returns the content of the class file that was built by this ClassWriter, in the given byte order.
+   * @see #toByteArray()
+   * @param byteOrder the byte order to use for the returned byte array. If {@link ByteOrder#BIG_ENDIAN}
+   * then the returned byte array will be in big-endian order, otherwise it will be in little-endian
+   * @return the content of the class file that was built by this ClassWriter, in the given byte order.
+   */
+  public byte[] toByteArray(ByteOrder byteOrder) {
+    ByteOrder previous = ByteVector.globalByteOrder;
+    ByteVector.setGlobalByteOrder(byteOrder);
+    try {
+      return toByteArray();
+    } finally {
+      ByteVector.setGlobalByteOrder(previous);
+    }
+  }
+    
 
   /**
    * Returns the equivalent of the given class file, with the ASM specific instructions replaced
